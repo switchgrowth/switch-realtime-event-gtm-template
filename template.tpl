@@ -14,6 +14,7 @@ ___INFO___
   "version": 1,
   "securityGroups": [],
   "displayName": "Switch Realtime Events",
+  "categories": ["DATA_WAREHOUSING"],
   "brand": {
     "id": "brand_dummy",
     "displayName": "",
