@@ -16,6 +16,8 @@ homepage: "https://www.switchgrowth.com"
 documentation: "https://docs.switchgrowth.com/boost"
 versions:
   # Latest version
+  - sha: b2e2a1a709e5f25bd09103f4bc0ab80d44af9061
+    changeNotes: Updating to use new Switch Pixel Event Queue
   - sha: b69dd3b54441cd38a4b3e575e48a685ad2d58205
     changeNotes: Minor UI and code improvements
   # Older versions
