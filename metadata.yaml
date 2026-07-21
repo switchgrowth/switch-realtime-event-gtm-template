@@ -16,6 +16,8 @@ homepage: "https://www.switchgrowth.com"
 documentation: "https://docs.switchgrowth.com/boost"
 versions:
   # Latest version
+  - sha: 8168ddcddc630d9f92078e1051f6a1c4834987af
+    changeNotes: Add caller ID / call start time fields and phone country setting
   - sha: 52272209945dace18aeb395ea4cfba43868bbb74
     changeNotes: Add template category
   - sha: b2e2a1a709e5f25bd09103f4bc0ab80d44af9061

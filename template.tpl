@@ -217,6 +217,14 @@ ___TEMPLATE_PARAMETERS___
                 {
                   "value": "value",
                   "displayValue": "Value"
+                },
+                {
+                  "value": "caller_id",
+                  "displayValue": "Caller ID (plain-text phone in E.164 for Call Conversions — not hashed)"
+                },
+                {
+                  "value": "call_start_time",
+                  "displayValue": "Call Start Time (ISO 8601)"
                 }
               ],
               "simpleValueType": true
@@ -342,6 +350,14 @@ ___TEMPLATE_PARAMETERS___
         "simpleValueType": true,
         "valueHint": "pixel.clientwebsite.com (no https or slashes needed)",
         "help": "This value should only be set if Switch has setup the Boost pixel to fire from within the clients infrastructure via DNS records. \u003cstrong\u003eDefaults to api.s10h.io\u003c/strong\u003e"
+      },
+      {
+        "type": "TEXT",
+        "name": "phoneCountry",
+        "displayName": "Phone Country (ISO 2-letter code)",
+        "simpleValueType": true,
+        "valueHint": "e.g. US, GB, AU, DE — defaults to US",
+        "help": "Default country used to normalize national-format phone numbers to E.164 before hashing (e.g. a GB number '0791...' becomes +44...). Numbers already in international format (starting with + or 00) are used as-is and ignore this. Covers North America, the UK, Australia, and Europe."
       },
       {
         "type": "CHECKBOX",
