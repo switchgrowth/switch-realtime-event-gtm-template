@@ -16,8 +16,8 @@ ___INFO___
   "displayName": "Switch Realtime Events",
   "categories": ["DATA_WAREHOUSING"],
   "brand": {
-    "id": "brand_dummy",
-    "displayName": "",
+    "id": "switch_boost",
+    "displayName": "Switch Boost Activation Template",
     "thumbnail": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJYAAACXCAYAAAD3XaJHAAAACXBIWXMAAAWJAAAFiQFtaJ36AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAARaSURBVHgB7d3LTRtRFIDhAw7seGTHAiyngyQVkDSQdJBHA0E0wKMCqABSAXRAssuSVIBlQGIVHC+RsHMuYSJAZjwOnplz7v0/yXIkZ8Hil8/4Hj9EAAAAAAAAAAAAAAAAAAAAAAAAEjIluKfZbH7RuzW9tfTW1tt+r9fb7SpBYYR1h0a1oXebQx467nQ6rwSFNQQ3lpaWWo1G4/CxhxcWFn6rH4JCpgU3Zmdnj0b8l1VBYYQl/0ZgK+//TE1NLQgKSz6sMAJl+HUVniD5sGZmZvYEE5d0WCsrKx91xK0KJi7ZsMII1Kg2BKVINiwdgZsy4oId/y/JsG5H4AdBaZILa1ExAsuXXFjz8/Mjz6zwdEmFdXtmtSYoXVJhFVjbYEKSCavI2gaTk0RYrG2ql0RYOgIPBJWKPqxwZqV3LwWVijos1jb1iTos1jb1iTYs1jb1ijIsRmD9ogxLXwWGj3C1BLWJLizWNjZEFxZrGxuiCou1jR3RhMXaxpZowmIE2hJFWLdf5NESmOE+LF4F2uQ+LNY2NrkOi7WNXW7DYm1jm9uwGIG2uQxreXl5lRFom8uwpqen+YYY49yFxdrGB1dhsbbxw1VYrG38cBMWaxtfXITFCPTHRVi3Z1aLAjfMh8XaxifTYbG28ct0WKxt/DIbFmsb38yGxdrGN5Nhsbbxz+oz1keBa1bDaglcsxpWW+Ca1bC+Clwz+5vQeuK+b+y4oat/z7EYMBgMfl5dXe1cXFy0xSjTPzYe1jl67PCu3+/XvifUqMLfYOm7TLvX19dvzs/PTcT+EL9iX1A4sNXIrb0frNvr9V50lRjDb0L7tjg3N/deDCIs53REt8QgwvLvRAwiLN9O9LrvuxhEWL5ttZUY9Ezgkp5lHZ2enpo9SOYZy6lGo/FZDCMsn8yOwAxh+XPS6XQ2xTjCckZfBb4VBwjLlx3rIzBDWH6EM6stcYKw/AgX7OaWzY8hLAd0H7ivF+yu3vxIWPadaFhuRmCGsOwzf2Y1DCsdw3Rtc2B5bZOHZyzDdG2zLk4Rll0uR2CGsGxysbbJQ1gGeVnb5CEse1yPwAxh2RLWNjsSAcIyRI8X1j2tbfIQlhFhbaNnVocSCcKyweXaJg9h2RDFBftdhFUzj+9cKIKw6tWNbQRmCKteu7GNwAxh1cf92iYPYdUkhrVNHsKqR3SvAh8irOpFPQIzhFWxfr9v+jsXJoWwKhTOrM7Ozr5JAgirOtGtbfIQVnWiv2C/i7AqEOvaJg9hle8ypRGYIazybac0AjOEVa5wZhXFW43HRVglin1tk4ewypPUq8CHCKscSaxt8hBWCXRt80kSR1iTt6drG5M/Q1Ilwpqs8IHTbQFhFTUYDEZ9kHSgt82UL9jv4hdWx9BsNn/p3fMhD4WowtomibfEFMEz1hj0WSuEMxjyUJsReB9hjSF8BF4Deh1+eUv+BnYZ/h0OQhmBAAAAAAAAAAAAAAAAAAAAAAAAACbrD87ZGJzFdja/AAAAAElFTkSuQmCC"
   },
   "description": "Provides the ability to send an API Request containing the information configured in the tag to Switch to be forwarded as server side events.",
@@ -418,10 +418,30 @@ const pixelUrl = data.pixelUrl;
 const automaticMode = data.automaticMode;
 
 function fireEvent() {
+  // Name which half of the contract we handed this to. window.__sgReady is a plain
+  // boolean pixel.js publishes once drainQueueIntoSwitch has swapped the real Switch
+  // in; it is a separate global because copyFromWindow cannot copy the instance
+  // itself (a class with private fields comes back undefined).
+  //
+  // This matters because every other signal in this chain lies by omission. GTM
+  // reports "Succeeded" the moment gtmOnSuccess fires, and the log below reports the
+  // payload was built — neither says whether the call reached a loaded Switch or went
+  // into a pre-load queue that will die with the page. An older pixel.js leaves this
+  // undefined, so treat only an explicit true as loaded.
+  const ready = copyFromWindow('__sgReady') === true;
+
   callInWindow('Switch.sendTemplateEvent', data);
+
   if (debugMode) {
+    log('Switch Realtime API - dispatched to ' + (ready
+      ? 'the loaded Switch'
+      : 'the pre-load queue (lost if the page navigates before pixel.js parses)'));
     log('Switch Realtime API - fired with payload: ' + JSON.stringify(data));
   }
+
+  // Deliberately not gated on `ready`: a queued call is legitimately pending, not
+  // failed, so the tag still succeeds. The log is the only place that distinction
+  // is visible.
   data.gtmOnSuccess();
 }
 
@@ -463,7 +483,7 @@ function embedScripts(onSuccess, onFail) {
   const cacheKey = "switch-" + pixelId;
   const urlForPixel = pixelUrl ? pixelUrl : 'api.s10h.io';
   const scriptUrl = 'https://' + urlForPixel + '/pixel.js?id=' + encodeUriComponent(pixelId) + options;
-  
+
   // Graceful fallback for custom domains
   // Checks if GTM has permission to inject this specific URL
   if (queryPermission('inject_script', scriptUrl)) {
@@ -707,6 +727,45 @@ ___WEB_PERMISSIONS___
                     "boolean": false
                   }
                 ]
+              },
+              {
+                "type": 3,
+                "mapKey": [
+                  {
+                    "type": 1,
+                    "string": "key"
+                  },
+                  {
+                    "type": 1,
+                    "string": "read"
+                  },
+                  {
+                    "type": 1,
+                    "string": "write"
+                  },
+                  {
+                    "type": 1,
+                    "string": "execute"
+                  }
+                ],
+                "mapValue": [
+                  {
+                    "type": 1,
+                    "string": "__sgReady"
+                  },
+                  {
+                    "type": 8,
+                    "boolean": true
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  },
+                  {
+                    "type": 8,
+                    "boolean": false
+                  }
+                ]
               }
             ]
           }
@@ -773,6 +832,71 @@ scenarios:
     assertThat(templateCalled).isTrue();
     assertThat(injectCalled).isFalse();
     assertApi('gtmOnSuccess').wasCalled();
+- name: Names the loaded Switch when __sgReady is true
+  code: |
+    // GTM reports "Succeeded" as soon as gtmOnSuccess fires, and "fired with payload"
+    // only says the payload was built. Neither distinguishes a call that reached a
+    // loaded Switch from one that went into a queue nothing will drain. This line is
+    // the only place that distinction is visible.
+    const logged = [];
+
+    mock('logToConsole', function (m) { logged.push(m); });
+    mock('copyFromWindow', function (key) {
+      if (key === '__sgQueue') return [];
+      if (key === '__sgReady') return true;
+      return undefined;
+    });
+    mock('callInWindow', function () {});
+
+    runCode({ apiKey: 'k', pipelineId: 'p', pixelId: 'x', debugMode: true });
+
+    const dispatched = logged.filter(function (m) {
+      return m.indexOf('dispatched to') !== -1;
+    });
+    assertThat(dispatched.length).isEqualTo(1);
+    assertThat(dispatched[0]).contains('the loaded Switch');
+- name: Names the pre-load queue when __sgReady is absent
+  code: |
+    // An older pixel.js does not publish __sgReady, so only an explicit true counts
+    // as loaded. This is also the genuine pre-load case, where the call really can be
+    // lost to a navigation.
+    const logged = [];
+
+    mock('logToConsole', function (m) { logged.push(m); });
+    mock('copyFromWindow', function (key) {
+      if (key === '__sgQueue') return [];
+      return undefined;
+    });
+    mock('callInWindow', function () {});
+
+    runCode({ apiKey: 'k', pipelineId: 'p', pixelId: 'x', debugMode: true });
+
+    const dispatched = logged.filter(function (m) {
+      return m.indexOf('dispatched to') !== -1;
+    });
+    assertThat(dispatched.length).isEqualTo(1);
+    assertThat(dispatched[0]).contains('the pre-load queue');
+
+    // A queued call is pending, not failed — the tag still succeeds either way.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Dispatch path is silent without debug mode
+  code: |
+    const logged = [];
+
+    mock('logToConsole', function (m) { logged.push(m); });
+    mock('copyFromWindow', function (key) {
+      if (key === '__sgQueue') return [];
+      if (key === '__sgReady') return true;
+      return undefined;
+    });
+    mock('callInWindow', function () {});
+
+    runCode({ apiKey: 'k', pipelineId: 'p', pixelId: 'x' });
+
+    const dispatched = logged.filter(function (m) {
+      return m.indexOf('dispatched to') !== -1;
+    });
+    assertThat(dispatched.length).isEqualTo(0);
 - name: Embeds and fires when Switch missing
   code: |-
     let templateCalled = false;
