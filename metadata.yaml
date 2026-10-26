@@ -16,6 +16,8 @@ homepage: "https://www.switchgrowth.com"
 documentation: "https://docs.switchgrowth.com/boost"
 versions:
   # Latest version
+  - sha: 099afd5f1bd42888b8c076ef30769d5a207f4898
+    changeNotes: Add an Advanced Matching checkbox
   - sha: e3b82b876a546ea9f3ccae9427f54adea7dbbf1b
     changeNotes: Log which Switch the event was dispatched to
   - sha: 52272209945dace18aeb395ea4cfba43868bbb74
