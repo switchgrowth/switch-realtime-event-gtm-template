@@ -381,6 +381,14 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "type": "CHECKBOX",
+        "name": "advancedMatching",
+        "checkboxText": "Advanced Matching",
+        "simpleValueType": true,
+        "defaultValue": false,
+        "help": "Fills a blank first name, last name and phone from form fields the Switch pixel captured on this page. <strong>Values set in this tag or the session cookie take priority.</strong> Requires Boost Automatic Mode."
+      },
+      {
+        "type": "CHECKBOX",
         "name": "debugMode",
         "checkboxText": "Enable Debug Mode",
         "simpleValueType": true,
@@ -832,6 +840,24 @@ scenarios:
     assertThat(templateCalled).isTrue();
     assertThat(injectCalled).isFalse();
     assertApi('gtmOnSuccess').wasCalled();
+- name: Passes the Advanced Matching setting to the pixel
+  code: |
+    // The pixel only fills names and phone when the event it receives carries
+    // advancedMatching: true, so the checkbox has to reach sendTemplateEvent.
+    const sent = [];
+
+    mock('copyFromWindow', function (key) {
+      if (key === '__sgQueue') return [];
+      return undefined;
+    });
+    mock('callInWindow', function (path, event) {
+      if (path === 'Switch.sendTemplateEvent') sent.push(event.advancedMatching);
+    });
+
+    runCode({ apiKey: 'k', pipelineId: 'p', pixelId: 'x', advancedMatching: true });
+    runCode({ apiKey: 'k', pipelineId: 'p', pixelId: 'x', advancedMatching: false });
+
+    assertThat(sent).isEqualTo([true, false]);
 - name: Names the loaded Switch when __sgReady is true
   code: |
     // GTM reports "Succeeded" as soon as gtmOnSuccess fires, and "fired with payload"
